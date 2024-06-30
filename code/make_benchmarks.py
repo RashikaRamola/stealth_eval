@@ -2,7 +2,7 @@ import sys
 sys.path.append("/home/rashika/CAFA4/InformationAccretion/")
 from ia import *
 import os
-
+import matplotlib.pyplot as plt
 
 def delete_extra_go_terms(terms_df, common_terms):
     for aspect in ['BPO', 'CCO', 'MFO']:
@@ -201,8 +201,8 @@ def process_raw_annot(ann_file_name, ont_graph, roots, remove_roots = True):
     return ann_prop
     
 # roots is a list of the root terms
-def create_bm_lists(t0_file, t1_file, t0_ont_graph, t1_ont_graph, roots, BM_path = "/data/rashika/CAFA4/eval/BM_GO/", common_path = '/data/rashika/CAFA4/common/'):
-    
+def create_bm_lists(t0_file, t1_file, t0_ont_graph, t1_ont_graph, t1_minus_ont_graph,roots, BM_path = "/data/rashika/CAFA4/eval/BM_GO/", common_path = '/data/rashika/CAFA4/common/', thresh_step = 0.01):
+
     #Prop t0 and t1 in their respective ontologies
     t0_prop = process_raw_annot(t0_file, t0_ont_graph, roots)
     t1_prop = process_raw_annot(t1_file, t1_ont_graph, roots)
@@ -213,7 +213,7 @@ def create_bm_lists(t0_file, t1_file, t0_ont_graph, t1_ont_graph, roots, BM_path
     t1_common.to_csv(common_path + 't1.tsv', sep = '\t', header = False, index = False)
 
     # Propagate back in the t0 ontology
-    subontologies = {aspect: fetch_aspect(t0_ont_graph, roots[aspect]) for aspect in roots}
+    subontologies = {aspect: fetch_aspect(t1_minus_ont_graph, roots[aspect]) for aspect in roots}
     t0_eval = propagate_terms(t0_common, subontologies)
     t1_eval = propagate_terms(t1_common, subontologies)
 
@@ -269,7 +269,7 @@ def calc_IA(BM_GO_path, t0_ont_file, IA_path = "/home/rashika/CAFA4/eval/IA/"):
         os.system(cmd)
         
         
-def run_eval(BM_GO_path, pred_dir, ont_file, IA_file = '/data/rashika/CAFA4/eval/IA/IA.txt', result_path = '/home/rashika/CAFA4/eval/eval_results/', log_path = '/home/rashika/CAFA4/eval/log/'):
+def run_eval(BM_GO_path, pred_dir, ont_file, IA_file = '/data/rashika/CAFA4/eval/IA/IA.txt', result_path = '/home/rashika/CAFA4/eval/eval_results/', log_path = '/home/rashika/CAFA4/eval/log/', thresh_step = 0.01):
     dir_list = os.listdir(BM_GO_path) # out_path is the path to the folder containing the target GO sets
 
     if not os.path.exists(result_path):
@@ -284,12 +284,16 @@ def run_eval(BM_GO_path, pred_dir, ont_file, IA_file = '/data/rashika/CAFA4/eval
         out_dir = result_path + file.split(".")[0] + '/'
         if not os.path.exists(out_dir):
             os.mkdir(out_dir)
+        log_dir = log_path + file.split(".")[0] + '/'
+        if not os.path.exists(log_dir):
+            os.mkdir(log_dir)
+        log_file = log_dir + 'run.log'
         
         # cafaeval go-basic.obo prediction_dir test_terms.tsv -ia IA.txt -prop fill -norm cafa -th_step 0.001 -max_terms 500
         #cmd = 'cafaeval /data/yisupeng/sharing/cafa4/gene_ontology_edit.obo.2020-01-01 /data/yisupeng/sharing/cafa4/all_models/ ' + '/data/yisupeng/sharing/cafa4/t1_truth.csv' + ' -out_dir '+ out_dir + ' -prop max -th_step 0.01  -no_orphans -log_level info > '+ log_path + file.split(".")[0] + '.log'+ ' &'
         #cmd = 'cafaeval '+ ont_file + pred_dir + BL_GO_path+file +' -out_dir '+ out_dir + ' -prop max -th_step 0.01  -no_orphans -log_level info > '+ log_path + file.split(".")[0] + '.log'+ ' &'
         #With IA
-        cmd = "python3 /home/rashika/CAFA4/CAFA-evaluator/src/cafaeval/__main__.py "+ ont_file +" "+ pred_dir + " " + BM_GO_path+file + " -out_dir " + out_dir + ' -ia ' + IA_file + " -prop max -th_step 0.01  -no_orphans " + " &"
+        cmd = "python3 /home/rashika/CAFA4/CAFA-evaluator/src/cafaeval/__main__.py "+ ont_file +" "+ pred_dir + " " + BM_GO_path+file + " -out_dir " + out_dir + ' -ia ' + IA_file + " -prop max -th_step " + str(thresh_step) + " -no_orphans > "+ log_file+  " &"
         #Without IA
         #cmd = "python3 /home/rashika/CAFA4/CAFA-evaluator/src/cafaeval/__main__.py "+ ont_file +" "+ pred_dir + " " + BM_GO_path+file + " -out_dir " + out_dir + " -prop max -th_step 0.01  -no_orphans " + " &"
         
@@ -310,6 +314,7 @@ def create_plots(results_path, metric, cols,out_path='/home/rashika/CAFA4/eval/p
     if not os.path.exists(out_path):
         os.mkdir(out_path)
     
+    dir_list.remove('bpo_all_type3')
     for file in dir_list:
         df_file = results_path + file +"/evaluation_all.tsv"
         df = pd.read_csv(df_file, sep="\t")
@@ -336,18 +341,18 @@ def create_plots(results_path, metric, cols,out_path='/home/rashika/CAFA4/eval/p
                 df['is_baseline'].fillna(False, inplace=True)
             # print(methods)
         #df = df.drop(columns='filename').set_index(['group', 'label', 'ns', 'tau'])
-        df = df.set_index(['group', 'label', 'ns', 'filename','tau'])
+        df = df.set_index(['group_unique', 'label', 'ns', 'filename','tau'])
         
         # Filter by coverage
         df = df[df['cov'] >= coverage_threshold]
         
         # Assign colors based on group
         cmap = plt.get_cmap('tab20')
-        df['colors'] = df.index.get_level_values('group')
+        df['colors'] = df.index.get_level_values('group_unique')
         df['colors'] = pd.factorize(df['colors'])[0]
         df['colors'] = df['colors'].apply(lambda x: cmap.colors[x % len(cmap.colors)])
         
-        index_best = df.groupby(level=['group', 'ns'])[metric].idxmax() if metric in ['f', 'f_w', 'f_micro', 'f_micro_w'] else df.groupby(['group', 'ns'])[metric].idxmin()
+        index_best = df.groupby(level=['group_unique', 'ns'])[metric].idxmax() if metric in ['f', 'f_w', 'f_micro', 'f_micro_w'] else df.groupby(['group_unique', 'ns'])[metric].idxmin()
         
         # Filter the dataframe for the best methods
         df_methods = df.reset_index('tau').loc[[ele[:-1] for ele in index_best], ['tau', 'cov', 'colors'] + cols + [metric]].sort_index()
@@ -364,32 +369,32 @@ def create_plots(results_path, metric, cols,out_path='/home/rashika/CAFA4/eval/p
         df_methods.drop(columns=['colors']).to_csv('{}/fig_{}.tsv'.format(out_folder, metric), float_format="%.3f", sep="\t")
         
         # Add first last points to precision and recall curves to improve APS calculation
-        def add_points(df_):
-            df_ = pd.concat([df_.iloc[0:1], df_])
-            df_.iloc[0, df_.columns.get_indexer(['tau', cols[0], cols[1]])] = [0, 1, 0]  # tau, rc, pr
-            df_ = pd.concat([df_, df_.iloc[-1:]])
-            df_.iloc[-1, df_.columns.get_indexer(['tau', cols[0], cols[1]])] = [1.1, 0, 1]
-            return df_
+        #def add_points(df_):
+        #    df_ = pd.concat([df_.iloc[0:1], df_])
+        #    df_.iloc[0, df_.columns.get_indexer(['tau', cols[0], cols[1]])] = [0, 1, 0]  # tau, rc, pr
+        #    df_ = pd.concat([df_, df_.iloc[-1:]])
+        #    df_.iloc[-1, df_.columns.get_indexer(['tau', cols[0], cols[1]])] = [1.1, 0, 1]
+        #    return df_
 
-        if metric.startswith('f') and add_extreme_points:
-            df_methods = df_methods.reset_index().groupby(['group', 'label', 'ns'], as_index=False).apply(add_points).set_index(['group', 'label', 'ns'])
+        #if metric.startswith('f') and add_extreme_points:
+        #    df_methods = df_methods.reset_index().groupby(['group_unique', 'label', 'ns'], as_index=False).apply(add_points).set_index(['group_unique', 'label', 'ns'])
         
         # Filter the dataframe for the best method and threshold
         df_best = df.loc[index_best, ['cov', 'colors'] + cols + [metric]]
         
         # Calculate average precision score 
-        if metric.startswith('f'):
-            df_best['aps'] = df_methods.groupby(level=['group', 'label', 'ns'])[[cols[0], cols[1]]].apply(lambda x: (x[cols[0]].diff(-1).shift(1) * x[cols[1]]).sum())
+        #if metric.startswith('f'):
+        #    df_best['aps'] = df_methods.groupby(level=['group_unique', 'label', 'ns'])[[cols[0], cols[1]]].apply(lambda x: (x[cols[0]].diff(-1).shift(1) * x[cols[1]]).sum())
 
         # Calculate the max coverage across all thresholds
-        df_best['max_cov'] = df_methods.groupby(level=['group', 'label', 'ns'])['cov'].max()
+        df_best['max_cov'] = df_methods.groupby(level=['group_unique', 'label', 'ns'])['cov'].max()
         
         # Set a label column for the plot legend
         df_best['label'] = df_best.index.get_level_values('label')
-        if 'aps' not in df_best.columns:
-            df_best['label'] = df_best.agg(lambda x: f"{x['label']} ({metric.upper()}={x[metric]:.3f} C={x['max_cov']:.3f})", axis=1)
-        else:
-            df_best['label'] = df_best.agg(lambda x: f"{x['label']} ({metric.upper()}={x[metric]:.3f} APS={x['aps']:.3f} C={x['max_cov']:.3f})", axis=1)
+        #if 'aps' not in df_best.columns:
+        #    df_best['label'] = df_best.agg(lambda x: f"{x['label']} ({metric.upper()}={x[metric]:.3f} C={x['max_cov']:.3f})", axis=1)
+        #else:
+        #    df_best['label'] = df_best.agg(lambda x: f"{x['label']} ({metric.upper()}={x[metric]:.3f} APS={x['aps']:.3f} C={x['max_cov']:.3f})", axis=1)
         
         # Generate the figures
         plt.rcParams.update({'font.size': 22, 'legend.fontsize': 18})
@@ -409,29 +414,37 @@ def create_plots(results_path, metric, cols,out_path='/home/rashika/CAFA4/eval/p
                 CS = ax.contour(X, Y, Z, np.arange(0.1, 1.0, 0.1), colors='gray')
                 ax.clabel(CS, inline=True) #, fontsize=10)
 
-            cnt = 0
+            cnt = -1
             # Iterate methods
             for i, (index, row) in enumerate(df_g.sort_values(by=[metric, 'max_cov'], ascending=[False if metric.startswith('f') else True, False]).iterrows()):
                 
-                #data = df_methods.loc[index[:-1]]
-                data = df_methods.loc[index[:-2]]
-                print(row[cols[0]], row[cols[1]])
-
-                # Precision-recall or mi-ru curves
-                ax.plot(data[cols[0]], data[cols[1]], color=row['colors'], label=row['label'], lw=2, zorder=500-i)
-
-                # F-max or S-min dots
-                ax.plot(row[cols[0]], row[cols[1]], color=row['colors'], marker='o', markersize=12, mfc='none', zorder=1000-i)
-                ax.plot(row[cols[0]], row[cols[1]], color=row['colors'], marker='o', markersize=6, zorder=1000-i)
-
                 cnt+=1
-                if n_curves and cnt >= n_curves:
-                    break
+                #print(row)
+                if (n_curves and cnt <= n_curves) or ('blast' in row['label']) or ('naive' in row['label']):
+                
+                    #data = df_methods.loc[index[:-1]]
+
+                    data = df_methods.loc[index[:-2]]
+                    print(row[cols[0]], row[cols[1]])
+
+                    # Precision-recall or mi-ru curves
+                    ax.plot(data[cols[0]], data[cols[1]], color=row['colors'], label=row['label'], lw=3, zorder=500-i)
+
+                    # F-max or S-min dots
+                    ax.plot(row[cols[0]], row[cols[1]], color=row['colors'], marker='o', markersize=12, mfc='none', zorder=1000-i)
+                    ax.plot(row[cols[0]], row[cols[1]], color=row['colors'], marker='o', markersize=6, zorder=1000-i)
+
+                
                 
             # Set axes limit
             if metric.startswith('f'):
                 plt.xlim(0, 1)
                 plt.ylim(0, 1)
+            
+            # Set axes limit
+            if metric.startswith('s'):
+                plt.xlim(0.4*df_best.loc[:,:,ns,:][cols[0]].max(), df_best.loc[:,:,ns,:][cols[0]].max())
+            #    plt.ylim(0, 1)
 
             # plt.xlim(0, max(1, df_best.loc[:,:,ns,:][cols[0]].max()))
             # plt.ylim(0, max(1, df_best.loc[:,:,ns,:][cols[1]].max()))

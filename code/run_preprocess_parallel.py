@@ -10,19 +10,22 @@ if __name__ == "__main__":
     # Define commands and log file names
     work_dir = "/data/rashika/CAFA4/"
     
-    t0_gaf_file = work_dir + "uniprot/raw_goa/sample_t0.gz"
-    #t0_gaf_file = work_dir + "uniprot/raw_goa/t0/goa_uniprot_all.gaf.195.gz"
-    #t0_out_path = work_dir + "extracted_goa/t0_preprocessed.csv"
-    t0_out_path = work_dir + "extracted_goa/t0_sample.csv"
-    #log_t0 =  work_dir + "log/log_preprocess_t0.txt"
-    log_t0 =  work_dir + "log/log_preprocess_t0_sample.txt"
+    #t0_gaf_file = work_dir + "uniprot/raw_goa/sample_t0.gz"
+    t0_gaf_file = work_dir + "uniprot/raw_goa/t0/goa_uniprot_all.gaf.195.gz" # The latest Uniprot file before t1 ( 2019-12-17)
+    #t0_gaf_file = work_dir + "uniprot/goa_2020_Jan_03/goa_uniprot_all.gaf.gz" # The latest GOA file before t0, 2019-12-17 reeleasee from UniProt, 2020_Jan_03 release from GOA 
+    t0_out_path = work_dir + "extracted_goa/t0_preprocessed.csv"
+    #t0_out_path = work_dir + "extracted_goa/t0_sample.csv"
+    log_t0 =  work_dir + "log/log_preprocess_t0.txt"
+    #log_t0 =  work_dir + "log/log_preprocess_t0_sample.txt"
     
-    t1_gaf_file = work_dir + "uniprot/raw_goa/sample_t1.gz"
-    #t1_gaf_file = work_dir + "uniprot/raw_goa/t1/goa_uniprot_all.gaf.gz"
-    #t1_out_path = work_dir + "extracted_goa/t1_preprocessed.csv"
-    t1_out_path = work_dir + "extracted_goa/t1_sample.csv"
-    #log_t1 = work_dir + "log/log_preprocess_t1.txt"
-    log_t1 =  work_dir + "log/log_preprocess_t1_sample.txt"
+    #t1_gaf_file = work_dir + "uniprot/raw_goa/sample_t1.gz"
+    #t1_gaf_file = work_dir + "uniprot/raw_goa/t1/goa_uniprot_all.gaf.gz" # The file from UniProt (2024-02-09)
+    t1_gaf_file = work_dir + "uniprot/uniprot_2024_2024-04-16/goa_uniprot_all.gaf.gz" # The file from UniProt 2024-04-16
+    #t1_gaf_file = work_dir + "uniprot/goa_2024-04-24/filtered_goa_uniprot_all.gaf.gz" # The latest GOA file before t1, 2024-04-16 release from UniProt, 2024-04-24 release from GOA
+    t1_out_path = work_dir + "extracted_goa/t1_preprocessed.csv"
+    #t1_out_path = work_dir + "extracted_goa/t1_sample.csv"
+    log_t1 = work_dir + "log/log_preprocess_t1.txt"
+    #log_t1 =  work_dir + "log/log_preprocess_t1_sample.txt"
     
     cmd_preprocess_t0 = [
     "python3",                 # Command to execute Python 3

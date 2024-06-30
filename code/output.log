@@ -1,0 +1,78 @@
+
+                            < M A T L A B (R) >
+                  Copyright 1984-2021 The MathWorks, Inc.
+                  R2021a (9.10.0.1602886) 64-bit (glnxa64)
+                             February 17, 2021
+
+ 
+For online documentation, see https://www.mathworks.com/support
+For product information, visit www.mathworks.com.
+ 
+
+currentDir =
+
+    '/data/common/CAFA4/baselines/'
+
+
+outDir =
+
+    '/data/common/CAFA4/processed_baselines/'
+
+
+items = 
+
+  struct with fields:
+
+       name: 'mfo'
+     folder: '/data/common/CAFA4/baselines'
+       date: '05-Jun-2024 17:56:17'
+      bytes: 0
+      isdir: 1
+    datenum: 7.3941e+05
+
+
+ans =
+
+    'mfo'
+
+
+outputDir_nested =
+
+    '/data/common/CAFA4/processed_baselines/mfo'
+
+
+items = 
+
+  struct with fields:
+
+       name: 'BN4S.mat'
+     folder: '/data/common/CAFA4/baselines/mfo'
+       date: '05-Jun-2024 17:56:18'
+      bytes: 1.1794e+09
+      isdir: 0
+    datenum: 7.3941e+05
+
+
+ans =
+
+    'BN4S.mat'
+
+
+itemPath =
+
+    '/data/common/CAFA4/baselines/mfo/BN4S.mat'
+
+
+file_name_split =
+
+  2x1 cell array
+
+    {'BN4S'}
+    {'mat' }
+
+
+outputFileName =
+
+    '/data/common/CAFA4/processed_baselines/mfo/BN4S'
+
+Predicted terms written to /data/common/CAFA4/processed_baselines/mfo/BN4S

@@ -1,0 +1,47 @@
+Namespace(goa_path='/data/rashika/CAFA4/uniprot/raw_goa/t0/goa_uniprot_all.gaf.195.gz', extract_col_list=['DB Object ID', 'Qualifier', 'GO ID', 'Evidence Code', 'Aspect'], no_dup=True, no_neg=True, evidence_codes=['EXP', 'IDA', 'IPI', 'IMP', 'IGI', 'IEP', 'TAS', 'IC'], highTP=True, out_path='/data/rashika/CAFA4/extracted_goa/t0_preprocessed.csv', only_annot=True)
+Indices of the extracted columns are :  [1, 3, 4, 6, 8]
+752473102  Rows in the input file
+184040290  duplicates dropped
+12543  Not Qualifiers found
+High Thoughput Evidence Code included
+Included evidence codes are : ['EXP', 'IDA', 'IPI', 'IMP', 'IGI', 'IEP', 'TAS', 'IC', 'HTP', 'HDA', 'HMP', 'HGI', 'HEP']
+736514
+                 DB Object ID Qualifier       GO ID Evidence Code Aspect
+81451              A0A009IHW8            GO:0003953           IDA      F
+81453              A0A009IHW8            GO:0019677           IDA      P
+1414368            A0A021WW32            GO:0000278           IMP      P
+1414371            A0A021WW32            GO:0000795           IDA      C
+1414375            A0A021WW32            GO:0005634           IDA      C
+...                       ...       ...         ...           ...    ...
+750961551  URS0000D54CAD_9606            GO:0010629           IDA      P
+750961552  URS0000D54CAD_9606            GO:0035195           IDA      P
+750961553  URS0000D54CAD_9606            GO:0050710           IDA      P
+750961554  URS0000D54CAD_9606            GO:1903231           IDA      F
+750965431  URS0000D5E627_7227            GO:0007283           IMP      P
+
+[736514 rows x 5 columns]
+Index(['DB Object ID', 'Qualifier', 'GO ID', 'Evidence Code', 'Aspect'], dtype='object')
+Namespace(goa_path='/data/rashika/CAFA4/uniprot/raw_goa/t1/goa_uniprot_all.gaf.gz', extract_col_list=['DB Object ID', 'Qualifier', 'GO ID', 'Evidence Code', 'Aspect'], no_dup=True, no_neg=True, evidence_codes=['EXP', 'IDA', 'IPI', 'IMP', 'IGI', 'IEP', 'TAS', 'IC'], highTP=True, out_path='/data/rashika/CAFA4/extracted_goa/t1_preprocessed.csv', only_annot=True)
+Indices of the extracted columns are :  [1, 3, 4, 6, 8]
+1377959086  Rows in the input file
+380531996  duplicates dropped
+11703  Not Qualifiers found
+High Thoughput Evidence Code included
+Included evidence codes are : ['EXP', 'IDA', 'IPI', 'IMP', 'IGI', 'IEP', 'TAS', 'IC', 'HTP', 'HDA', 'HMP', 'HGI', 'HEP']
+784343
+                  DB Object ID                   Qualifier  ... Evidence Code Aspect
+2973                    Q9WUC4                 involved_in  ...           IDA      P
+2974                    Q9WUC4                 involved_in  ...           IDA      P
+2981                    Q9WUC4                 involved_in  ...           IMP      P
+2982                    Q9WUC4                     enables  ...           IPI      F
+5497                    Q6DBW0  acts_upstream_of_or_within  ...           IMP      P
+...                        ...                         ...  ...           ...    ...
+1368014348  URS00019813EB_7227                  located_in  ...           IDA      C
+1368014349  URS00019813FF_7227                 involved_in  ...           IMP      P
+1368014350  URS00019813FF_7227                  located_in  ...           IDA      C
+1368014351  URS0001981404_7227                 involved_in  ...           IMP      P
+1368014352  URS0001981404_7227                  located_in  ...           IDA      C
+
+[784343 rows x 5 columns]
+Index(['DB Object ID', 'Qualifier', 'GO ID', 'Evidence Code', 'Aspect'], dtype='object')
+Both processes have finished.

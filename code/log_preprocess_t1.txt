@@ -1,0 +1,18 @@
+Namespace(goa_path='/data/rashika/CAFA4/uniprot/uniprot_2024_2024-04-16/goa_uniprot_all.gaf.gz', extract_col_list=['DB Object ID', 'Qualifier', 'GO ID', 'Evidence Code', 'Aspect'], no_dup=True, no_neg=True, evidence_codes=['EXP', 'IDA', 'IPI', 'IMP', 'IGI', 'IEP', 'TAS', 'IC'], highTP=True, out_path='/data/rashika/CAFA4/extracted_goa/t1_preprocessed.csv', only_annot=True)
+Indices of the extracted columns are :  [1, 3, 4, 6, 8]
+Traceback (most recent call last):
+  File "/home/rashika/CAFA4/stealth_eval/code/preprocess_gaf.py", line 124, in <module>
+    main()
+  File "/home/rashika/CAFA4/stealth_eval/code/preprocess_gaf.py", line 105, in main
+    Extracted_ann = extract_annot(args.goa_path, args.extract_col_list)
+  File "/home/rashika/CAFA4/stealth_eval/code/preprocess_gaf.py", line 38, in extract_annot
+    joined_lines = ''.join(filtered_lines)
+  File "/home/rashika/CAFA4/stealth_eval/code/preprocess_gaf.py", line 34, in <genexpr>
+    filtered_lines = (line for line in f if not line.startswith('!'))
+  File "/home/rashika/anaconda3/lib/python3.10/gzip.py", line 314, in read1
+    return self._buffer.read1(size)
+  File "/home/rashika/anaconda3/lib/python3.10/_compression.py", line 68, in readinto
+    data = self.read(len(byte_view))
+  File "/home/rashika/anaconda3/lib/python3.10/gzip.py", line 507, in read
+    raise EOFError("Compressed file ended before the "
+EOFError: Compressed file ended before the end-of-stream marker was reached

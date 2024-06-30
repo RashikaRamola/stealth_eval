@@ -55,9 +55,8 @@ def extract_annot(goa_file, extract_col_list = ['DB Object ID', 'Qualifier','GO 
 
 def remove_dup_and_neg(Extracted_ann, remove_dup = True, remove_neg = True):
     N = len(Extracted_ann)
-    print(N, " Rows in the input file")
     if remove_dup:
-        Extracted_ann = Extracted_ann.drop_duplicates().copy()
+        Extracted_ann = Extracted_ann.drop_duplicates(subset=['DB Object ID', 'GO ID']).copy()
         print(N-len(Extracted_ann), " duplicates dropped")
     if remove_neg:
         Not_qualifier = Extracted_ann["Qualifier"].apply(lambda x:"NOT" in x)
@@ -68,18 +67,20 @@ def remove_dup_and_neg(Extracted_ann, remove_dup = True, remove_neg = True):
 
 # Documentation of evidence codes - https://geneontology.org/docs/guide-go-evidence-codes/
 def filter_evidence_codes(Extracted_ann, evidence_codes = ['EXP', 'IDA', 'IPI','IMP', 'IGI', 'IEP', 'TAS', 'IC'], highTP = False):
+    N = len(Extracted_ann)
+    print(N, " Rows in the input file")
     if highTP:
         evidence_codes += ['HTP', 'HDA', 'HMP', 'HGI', 'HEP']
         print("High Thoughput Evidence Code included")
     print("Included evidence codes are :", evidence_codes)
     evidence_True = Extracted_ann['Evidence Code'].isin(evidence_codes)
-    print(sum(evidence_True))
+    print(sum(evidence_True), " rows have the included evidence codes")
     Filtered = Extracted_ann[evidence_True].copy() 
     return Filtered
 
 def write_annot(Extracted_ann, out_file = "extracted.tsv", out_cols = ['DB Object ID', 'GO ID', 'Aspect']):
-    print(Extracted_ann)
-    print(Extracted_ann.columns)
+    #print(Extracted_ann)
+    #print(Extracted_ann.columns)
     Extracted_ann.loc[:, out_cols].to_csv(out_file, index = False, sep = "\t")
     
 
