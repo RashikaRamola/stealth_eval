@@ -17,7 +17,7 @@ def pred2tsv_new(matlab_pred_path, output_path):
 
     GO_index = list(range(len(terms))) 
     prediction = []
-    for i, protein in enumerate(proteins[:5]):
+    for i, protein in enumerate(proteins):
         non_zero_mask = mat['pred']['score'][i].toarray()[0]!=0
         score_indices = [GO_index[j] for j in range(len(non_zero_mask)) if non_zero_mask[j]]
         selected_terms = [terms[index] for index in score_indices]

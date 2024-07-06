@@ -74,8 +74,10 @@ def get_annot_gained(t0_annot_list, t1_annot_list, remove_protein_binding = Fals
             else:
                 annot_gained[protein][ont] =  t1_annot_list[protein][ont]
         
+        # If only protein binding or its parent terms are present, remove them
         if remove_protein_binding and annot_gained[protein]['BPO']:
             ann_minus_pb = set(annot_gained[protein]['BPO']).difference({'GO:0003674', 'GO:0005515', 'GO:0005488'})
+            print(" H: ",ann_minus_pb)
             if len(ann_minus_pb)==0:
                 annot_gained[protein]['BPO'] = []
                 print("PB Removed")
