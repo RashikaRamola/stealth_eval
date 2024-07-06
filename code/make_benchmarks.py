@@ -52,7 +52,7 @@ def get_annot_list(annot_df):
     return annot_list
         
     
-def get_annot_gained(t0_annot_list, t1_annot_list):
+def get_annot_gained(t0_annot_list, t1_annot_list, remove_protein_binding = False):
     """
     Returns the annotations gained by the proteins in each ontology
     
@@ -73,10 +73,17 @@ def get_annot_gained(t0_annot_list, t1_annot_list):
             # If the protein is not in the t0 annotations, all its t1 annotations are the annotations gained
             else:
                 annot_gained[protein][ont] =  t1_annot_list[protein][ont]
+        
+        if remove_protein_binding and annot_gained[protein]['BPO']:
+            ann_minus_pb = set(annot_gained[protein]['BPO']).difference({'GO:0003674', 'GO:0005515', 'GO:0005488'})
+            if len(ann_minus_pb)==0:
+                annot_gained[protein]['BPO'] = []
+                print("PB Removed")
+        
     return annot_gained
+    
 
-
-def get_baselines(t0_annot_list, t1_annot_list, BM_path):
+def get_baselines(t0_annot_list, t1_annot_list, BM_path, remove_protein_binding = False):
     """
     Returns proteins that make it to the benchmarks
     
@@ -84,7 +91,7 @@ def get_baselines(t0_annot_list, t1_annot_list, BM_path):
     type2 (Limitied Knowledge) Annotation in other ontologies but not in evaluation ontology at t0, annotations in the evaluation ontology at t1
     type3 (Partial Knowledge) Annotations in the evaluation ontology at t0, more annotations in the evaluation ontology at t0 (may or may not have annotations in other ontologies at t0 and t1
     """
-    annot_gained = get_annot_gained(t0_annot_list, t1_annot_list)
+    annot_gained = get_annot_gained(t0_annot_list, t1_annot_list, remove_protein_binding)
     
     proteins = list(annot_gained.keys())
     
@@ -201,7 +208,7 @@ def process_raw_annot(ann_file_name, ont_graph, roots, remove_roots = True):
     return ann_prop
     
 # roots is a list of the root terms
-def create_bm_lists(t0_file, t1_file, t0_ont_graph, t1_ont_graph, t1_minus_ont_graph,roots, BM_path = "/data/rashika/CAFA4/eval/BM_GO/", common_path = '/data/rashika/CAFA4/common/', thresh_step = 0.01):
+def create_bm_lists(t0_file, t1_file, t0_ont_graph, t1_ont_graph, t1_minus_ont_graph,roots, BM_path = "/data/rashika/CAFA4/eval/BM_GO/", common_path = '/data/rashika/CAFA4/common/', thresh_step = 0.01, remove_protein_binding = False):
 
     #Prop t0 and t1 in their respective ontologies
     t0_prop = process_raw_annot(t0_file, t0_ont_graph, roots)
@@ -222,7 +229,7 @@ def create_bm_lists(t0_file, t1_file, t0_ont_graph, t1_ont_graph, t1_minus_ont_g
     t1_annot_list = get_annot_list(t1_eval)
     
     # Convert the eval Dfs into annotation lists
-    get_baselines(t0_annot_list, t1_annot_list,  BM_path)
+    get_baselines(t0_annot_list, t1_annot_list,  BM_path, remove_protein_binding)
     
 
 def shortlist_BM_GO(t1_truth, BM_path, BM_GO_path):
@@ -293,7 +300,7 @@ def run_eval(BM_GO_path, pred_dir, ont_file, IA_file = '/data/rashika/CAFA4/eval
         #cmd = 'cafaeval /data/yisupeng/sharing/cafa4/gene_ontology_edit.obo.2020-01-01 /data/yisupeng/sharing/cafa4/all_models/ ' + '/data/yisupeng/sharing/cafa4/t1_truth.csv' + ' -out_dir '+ out_dir + ' -prop max -th_step 0.01  -no_orphans -log_level info > '+ log_path + file.split(".")[0] + '.log'+ ' &'
         #cmd = 'cafaeval '+ ont_file + pred_dir + BL_GO_path+file +' -out_dir '+ out_dir + ' -prop max -th_step 0.01  -no_orphans -log_level info > '+ log_path + file.split(".")[0] + '.log'+ ' &'
         #With IA
-        cmd = "python3 /home/rashika/CAFA4/CAFA-evaluator/src/cafaeval/__main__.py "+ ont_file +" "+ pred_dir + " " + BM_GO_path+file + " -out_dir " + out_dir + ' -ia ' + IA_file + " -prop max -th_step " + str(thresh_step) + " -no_orphans > "+ log_file+  " &"
+        cmd = "python3 /home/rashika/CAFA4/CAFA-evaluator/src/cafaeval/__main__.py "+ ont_file +" "+ pred_dir + " " + BM_GO_path+file + " -out_dir " + out_dir + ' -ia ' + IA_file + " -prop fill -th_step " + str(thresh_step) + " -no_orphans > "+ log_file+  " &"
         #Without IA
         #cmd = "python3 /home/rashika/CAFA4/CAFA-evaluator/src/cafaeval/__main__.py "+ ont_file +" "+ pred_dir + " " + BM_GO_path+file + " -out_dir " + out_dir + " -prop max -th_step 0.01  -no_orphans " + " &"
         
@@ -302,7 +309,7 @@ def run_eval(BM_GO_path, pred_dir, ont_file, IA_file = '/data/rashika/CAFA4/eval
         os.system(cmd)
 
 
-def create_plots(results_path, metric, cols,out_path='/home/rashika/CAFA4/eval/plots/', n_curves = None, names_file = None):
+def create_plots(results_path, metric, cols,out_path='/home/rashika/CAFA4/eval/plots/', n_curves = None, names_file = None, S_min_coord = None):
     dir_list = os.listdir(results_path)
     
     cumulate = True
@@ -314,7 +321,6 @@ def create_plots(results_path, metric, cols,out_path='/home/rashika/CAFA4/eval/p
     if not os.path.exists(out_path):
         os.mkdir(out_path)
     
-    dir_list.remove('bpo_all_type3')
     for file in dir_list:
         df_file = results_path + file +"/evaluation_all.tsv"
         df = pd.read_csv(df_file, sep="\t")
@@ -347,11 +353,12 @@ def create_plots(results_path, metric, cols,out_path='/home/rashika/CAFA4/eval/p
         df = df[df['cov'] >= coverage_threshold]
         
         # Assign colors based on group
-        cmap = plt.get_cmap('tab20')
-        df['colors'] = df.index.get_level_values('group_unique')
-        df['colors'] = pd.factorize(df['colors'])[0]
-        df['colors'] = df['colors'].apply(lambda x: cmap.colors[x % len(cmap.colors)])
-        
+        if 'colors' not in df.columns:
+            cmap = plt.get_cmap('tab20')
+            df['colors'] = df.index.get_level_values('group_unique')
+            df['colors'] = pd.factorize(df['colors'])[0]
+            df['colors'] = df['colors'].apply(lambda x: cmap.colors[x % len(cmap.colors)])
+
         index_best = df.groupby(level=['group_unique', 'ns'])[metric].idxmax() if metric in ['f', 'f_w', 'f_micro', 'f_micro_w'] else df.groupby(['group_unique', 'ns'])[metric].idxmin()
         
         # Filter the dataframe for the best methods
@@ -390,14 +397,16 @@ def create_plots(results_path, metric, cols,out_path='/home/rashika/CAFA4/eval/p
         df_best['max_cov'] = df_methods.groupby(level=['group_unique', 'label', 'ns'])['cov'].max()
         
         # Set a label column for the plot legend
-        df_best['label'] = df_best.index.get_level_values('label')
-        #if 'aps' not in df_best.columns:
-        #    df_best['label'] = df_best.agg(lambda x: f"{x['label']} ({metric.upper()}={x[metric]:.3f} C={x['max_cov']:.3f})", axis=1)
-        #else:
-        #    df_best['label'] = df_best.agg(lambda x: f"{x['label']} ({metric.upper()}={x[metric]:.3f} APS={x['aps']:.3f} C={x['max_cov']:.3f})", axis=1)
+        df_best['label'] = df_best.index.get_level_values('group_unique')
+        df_best['label'] = df_best.apply(lambda x: f"{x['label']} ({metric.upper().split('_')[0]}={x[metric]:.3f} C={x['max_cov']:.3f})", axis=1)
+
+#         if 'aps' not in df_best.columns:
+#             df_best['label'] = df_best.agg(lambda x: f"{x['label']} ({metric.upper()}={x[metric]:.3f} C={x['max_cov']:.3f})", axis=1)
+#         else:
+#             df_best['label'] = df_best.agg(lambda x: f"{x['label']} ({metric.upper()}={x[metric]:.3f} APS={x['aps']:.3f} C={x['max_cov']:.3f})", axis=1)
         
         # Generate the figures
-        plt.rcParams.update({'font.size': 22, 'legend.fontsize': 18})
+        plt.rcParams.update({'font.size': 12, 'legend.fontsize': 8})
 
         # F-score contour lines
         x = np.arange(0.01, 1, 0.01)
@@ -407,29 +416,41 @@ def create_plots(results_path, metric, cols,out_path='/home/rashika/CAFA4/eval/p
 
         
         for ns, df_g in df_best.groupby(level='ns'):
-            fig, ax = plt.subplots(figsize=(15, 15))
+            fig, ax = plt.subplots(figsize=(4, 4))
 
              # Contour lines. At the moment they are provided only for the F-score
             if metric.startswith('f'):
-                CS = ax.contour(X, Y, Z, np.arange(0.1, 1.0, 0.1), colors='gray')
+                CS = ax.contour(X, Y, Z, np.arange(0.1, 1.0, 0.1), colors='gray', linewidths=0.5)
                 ax.clabel(CS, inline=True) #, fontsize=10)
 
             cnt = -1
             # Iterate methods
             for i, (index, row) in enumerate(df_g.sort_values(by=[metric, 'max_cov'], ascending=[False if metric.startswith('f') else True, False]).iterrows()):
+                if  ('Naive' in row['label']):
+                    continue
                 
                 cnt+=1
                 #print(row)
-                if (n_curves and cnt <= n_curves) or ('blast' in row['label']) or ('naive' in row['label']):
+                #if (n_curves and cnt <= n_curves) or ('BLAST' in row['label']) or ('Naive' in row['label']):
+                if (n_curves and cnt <= n_curves) or ('BLAST' in row['label']):
                 
                     #data = df_methods.loc[index[:-1]]
 
                     data = df_methods.loc[index[:-2]]
-                    print(row[cols[0]], row[cols[1]])
-
+    
+    
                     # Precision-recall or mi-ru curves
-                    ax.plot(data[cols[0]], data[cols[1]], color=row['colors'], label=row['label'], lw=3, zorder=500-i)
-
+                    # Determine linestyle based on label or condition
+                    linestyle = '-'  # Default linestyle
+                    if 'BLAST' in row['label'] or 'Naive' in row['label']:
+                        linestyle = 'dotted'
+                    elif 'cafa3' in row['label']:
+                        linestyle = 'dotted'
+                    elif 'cafa2' in row['label']:
+                        linestyle = 'dashed'
+                    
+                    ax.plot(data[cols[0]], data[cols[1]], color=row['colors'], linestyle = linestyle, label=row['label'], lw=1.5, zorder=500-i)
+                    
                     # F-max or S-min dots
                     ax.plot(row[cols[0]], row[cols[1]], color=row['colors'], marker='o', markersize=12, mfc='none', zorder=1000-i)
                     ax.plot(row[cols[0]], row[cols[1]], color=row['colors'], marker='o', markersize=6, zorder=1000-i)
@@ -440,27 +461,40 @@ def create_plots(results_path, metric, cols,out_path='/home/rashika/CAFA4/eval/p
             if metric.startswith('f'):
                 plt.xlim(0, 1)
                 plt.ylim(0, 1)
-            
-            # Set axes limit
-            if metric.startswith('s'):
-                plt.xlim(0.4*df_best.loc[:,:,ns,:][cols[0]].max(), df_best.loc[:,:,ns,:][cols[0]].max())
-            #    plt.ylim(0, 1)
+            if metric.startswith('s') and S_min_coord:
+                plt.xlim(S_min_coord[file][0])
+                plt.ylim(S_min_coord[file][1])
+            #Set axes limit
+            #if metric.startswith('s'):
+            #    plt.xlim(23, 28)
+            #    plt.ylim(0, 50)
+                #plt.xlim(0.4*df_best.loc[:,:,ns,:][cols[0]].max(), df_best.loc[:,:,ns,:][cols[0]].max())
+                #plt.ylim(0, 1)
 
             # plt.xlim(0, max(1, df_best.loc[:,:,ns,:][cols[0]].max()))
             # plt.ylim(0, max(1, df_best.loc[:,:,ns,:][cols[1]].max()))
 
             # Set titles
-            ax.set_title(file)
-            ax.set_xlabel(axis_title_dict[cols[0]], labelpad=20)
-            ax.set_ylabel(axis_title_dict[cols[1]], labelpad=20)
+            # Set titles
+            type_dict = {}
+            type_dict['type1'] = 'NK'
+            type_dict['type2'] = 'LK'
+            type_dict['type3'] = 'PK'
+            type_dict['type12'] = 'NK + LK'
+            ax.set_title(file.split('_')[0].upper() + " (" + type_dict[file.split('_')[2]] + ")", fontsize = 25)
+            #ax.set_xlabel(axis_title_dict[cols[0]], labelpad=20, fontsize=36)
+            #ax.set_ylabel(axis_title_dict[cols[1]], labelpad=20, fontsize=36)
+            ax.set_xlabel("Precision", fontsize = 18)
+            ax.set_ylabel("Recall", fontsize = 18)
+            fig.set_linewidth(5)
 
             # Legend
-            # ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-            leg = ax.legend(markerscale=6, title=file)
+            #ax.legend(loc='center right', bbox_to_anchor=(1, 1.5))
+            leg = ax.legend(markerscale=6, title=file, loc='upper center')
             for legobj in leg.get_lines():
                 legobj.set_linewidth(10.0)
                 
-            leg.set_bbox_to_anchor((1.05, 1))  
+            ax.legend(title='', fontsize=8, bbox_to_anchor=(1.025, -0.2))  
 
             # Save figure on disk
             plt.savefig("{}/fig_{}_{}.png".format(out_folder, metric, ns), bbox_inches='tight', dpi=300, transparent=True)
