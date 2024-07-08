@@ -75,9 +75,10 @@ def get_annot_gained(t0_annot_list, t1_annot_list, remove_protein_binding = Fals
                 annot_gained[protein][ont] =  t1_annot_list[protein][ont]
         
         # If only protein binding or its parent terms are present, remove them
+        # Find proteins with only protein binding ('GO:0005515'), its parents ('GO:0003674' & 'GO:0005488'):
         if remove_protein_binding and annot_gained[protein]['BPO']:
             ann_minus_pb = set(annot_gained[protein]['BPO']).difference({'GO:0003674', 'GO:0005515', 'GO:0005488'})
-            print(" H: ",ann_minus_pb)
+            #print(" H: ",ann_minus_pb)
             if len(ann_minus_pb)==0:
                 annot_gained[protein]['BPO'] = []
                 print("PB Removed")
@@ -302,7 +303,7 @@ def run_eval(BM_GO_path, pred_dir, ont_file, IA_file = '/data/rashika/CAFA4/eval
         #cmd = 'cafaeval /data/yisupeng/sharing/cafa4/gene_ontology_edit.obo.2020-01-01 /data/yisupeng/sharing/cafa4/all_models/ ' + '/data/yisupeng/sharing/cafa4/t1_truth.csv' + ' -out_dir '+ out_dir + ' -prop max -th_step 0.01  -no_orphans -log_level info > '+ log_path + file.split(".")[0] + '.log'+ ' &'
         #cmd = 'cafaeval '+ ont_file + pred_dir + BL_GO_path+file +' -out_dir '+ out_dir + ' -prop max -th_step 0.01  -no_orphans -log_level info > '+ log_path + file.split(".")[0] + '.log'+ ' &'
         #With IA
-        cmd = "python3 /home/rashika/CAFA4/CAFA-evaluator/src/cafaeval/__main__.py "+ ont_file +" "+ pred_dir + " " + BM_GO_path+file + " -out_dir " + out_dir + ' -ia ' + IA_file + " -prop fill -th_step " + str(thresh_step) + " -no_orphans > "+ log_file+  " &"
+        cmd = "python3 /home/rashika/CAFA4/CAFA-evaluator/src/cafaeval/__main__.py "+ ont_file +" "+ pred_dir + " " + BM_GO_path+file + " -out_dir " + out_dir + ' -ia ' + IA_file + " -prop fill -threads 1 -th_step " + str(thresh_step) + " -no_orphans > "+ log_file+  " &"
         #Without IA
         #cmd = "python3 /home/rashika/CAFA4/CAFA-evaluator/src/cafaeval/__main__.py "+ ont_file +" "+ pred_dir + " " + BM_GO_path+file + " -out_dir " + out_dir + " -prop max -th_step 0.01  -no_orphans " + " &"
         
