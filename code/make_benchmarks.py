@@ -3,6 +3,7 @@ sys.path.append("/home/rashika/CAFA4/InformationAccretion/")
 from ia import *
 import os
 import matplotlib.pyplot as plt
+import copy
 
 def delete_extra_go_terms(terms_df, common_terms):
     for aspect in ['BPO', 'CCO', 'MFO']:
@@ -160,13 +161,18 @@ def get_baselines(t0_annot_list, t1_annot_list, BM_path, remove_protein_binding 
         os.mkdir(BM_path)
     
     for type_df in [type1_df, type2_df, type3_df, type12_df]: 
-        for ont in ["BPO", "CCO", "MFO"]:
-            bl_file_path = BM_path + ont.lower() + "_all" + "_"+ get_variable_name(type_df, locals()).split("_")[0] +".txt"
-            ont_df = type_df[type_df["aspect"] == ont].copy()
-            #aspect_mapping = {'BPO': 'P', 'MFO': 'F', 'CCO':'C'}
-            #ont_df['aspect'] = ont_df['aspect'].map(aspect_mapping)
-            print(bl_file_path)
-            ont_df.to_csv(bl_file_path, index=False, sep = "\t", header = False)  
+        bl_file_path = BM_path + get_variable_name(type_df, locals()).split("_")[0] +".txt"
+        print(bl_file_path)
+        type_df.to_csv(bl_file_path, index=False, sep = "\t", header = False)  
+            
+#     for type_df in [type1_df, type2_df, type3_df, type12_df]: 
+#         for ont in ["BPO", "CCO", "MFO"]:
+#             bl_file_path = BM_path + ont.lower() + "_all" + "_"+ get_variable_name(type_df, locals()).split("_")[0] +".txt"
+#             ont_df = type_df[type_df["aspect"] == ont].copy()
+#             #aspect_mapping = {'BPO': 'P', 'MFO': 'F', 'CCO':'C'}
+#             #ont_df['aspect'] = ont_df['aspect'].map(aspect_mapping)
+#             print(bl_file_path)
+#             ont_df.to_csv(bl_file_path, index=False, sep = "\t", header = False)  
     
     
     #return type1_df, type2_df, type3_df, type12_df
@@ -303,7 +309,10 @@ def run_eval(BM_GO_path, pred_dir, ont_file, IA_file = '/data/rashika/CAFA4/eval
         #cmd = 'cafaeval /data/yisupeng/sharing/cafa4/gene_ontology_edit.obo.2020-01-01 /data/yisupeng/sharing/cafa4/all_models/ ' + '/data/yisupeng/sharing/cafa4/t1_truth.csv' + ' -out_dir '+ out_dir + ' -prop max -th_step 0.01  -no_orphans -log_level info > '+ log_path + file.split(".")[0] + '.log'+ ' &'
         #cmd = 'cafaeval '+ ont_file + pred_dir + BL_GO_path+file +' -out_dir '+ out_dir + ' -prop max -th_step 0.01  -no_orphans -log_level info > '+ log_path + file.split(".")[0] + '.log'+ ' &'
         #With IA
-        cmd = "python3 /home/rashika/CAFA4/CAFA-evaluator/src/cafaeval/__main__.py "+ ont_file +" "+ pred_dir + " " + BM_GO_path+file + " -out_dir " + out_dir + ' -ia ' + IA_file + " -prop fill -threads 1 -th_step " + str(thresh_step) + " -no_orphans > "+ log_file+  " &"
+        if "bpo_all_type3" in file:
+            cmd = "python3 /home/rashika/CAFA4/CAFA-evaluator/src/cafaeval/__main__.py "+ ont_file +" "+ pred_dir + " " + BM_GO_path+file + " -out_dir " + out_dir + ' -ia ' + IA_file + " -prop fill -threads 6 -th_step " + str(thresh_step) + " -no_orphans > "+ log_file+  " &"
+        else:
+            cmd = "python3 /home/rashika/CAFA4/CAFA-evaluator/src/cafaeval/__main__.py "+ ont_file +" "+ pred_dir + " " + BM_GO_path+file + " -out_dir " + out_dir + ' -ia ' + IA_file + " -prop fill -threads 1 -th_step " + str(thresh_step) + " -no_orphans > "+ log_file+  " &"
         #Without IA
         #cmd = "python3 /home/rashika/CAFA4/CAFA-evaluator/src/cafaeval/__main__.py "+ ont_file +" "+ pred_dir + " " + BM_GO_path+file + " -out_dir " + out_dir + " -prop max -th_step 0.01  -no_orphans " + " &"
         
@@ -419,7 +428,7 @@ def create_plots(results_path, metric, cols,out_path='/home/rashika/CAFA4/eval/p
 
         
         for ns, df_g in df_best.groupby(level='ns'):
-            fig, ax = plt.subplots(figsize=(4, 4))
+            fig, ax = plt.subplots(figsize=(5, 5))
 
              # Contour lines. At the moment they are provided only for the F-score
             if metric.startswith('f'):
@@ -435,7 +444,7 @@ def create_plots(results_path, metric, cols,out_path='/home/rashika/CAFA4/eval/p
                 cnt+=1
                 #print(row)
                 #if (n_curves and cnt <= n_curves) or ('BLAST' in row['label']) or ('Naive' in row['label']):
-                if (n_curves and cnt <= n_curves) or ('BLAST' in row['label']):
+                if (n_curves and cnt <= n_curves) and not('BLAST' in row['label']):
                 
                     #data = df_methods.loc[index[:-1]]
 
@@ -452,7 +461,7 @@ def create_plots(results_path, metric, cols,out_path='/home/rashika/CAFA4/eval/p
                     elif 'cafa2' in row['label']:
                         linestyle = 'dashed'
                     
-                    ax.plot(data[cols[0]], data[cols[1]], color=row['colors'], linestyle = linestyle, label=row['label'], lw=1.5, zorder=500-i)
+                    ax.plot(data[cols[0]], data[cols[1]], color=row['colors'], linestyle = linestyle, label=row['label'], lw=2, zorder=500-i)
                     
                     # F-max or S-min dots
                     ax.plot(row[cols[0]], row[cols[1]], color=row['colors'], marker='o', markersize=12, mfc='none', zorder=1000-i)
@@ -497,10 +506,31 @@ def create_plots(results_path, metric, cols,out_path='/home/rashika/CAFA4/eval/p
             for legobj in leg.get_lines():
                 legobj.set_linewidth(10.0)
                 
-            ax.legend(title='', fontsize=8, bbox_to_anchor=(1.025, -0.2))  
+            ax.legend(title='', fontsize=8, bbox_to_anchor=(1.025, -0.2)) 
+            
+            # get handles and labels for reuse
+            label_params = copy.copy(ax.get_legend_handles_labels())
+            
+            ax.legend().remove()
 
             # Save figure on disk
-            plt.savefig("{}/fig_{}_{}.png".format(out_folder, metric, ns), bbox_inches='tight', dpi=300, transparent=True)
+            plt.savefig("{}/fig_{}_{}_{}.png".format(out_folder, metric, ns, type_dict[file.split('_')[2]]), bbox_inches='tight', dpi=300, transparent=True)
             # plt.clf()
+            
+            # Thickness of lines in the legend plot
+            for legobj in label_params[0]:
+                legobj.set_linewidth(3)
+
+            figl, axl = plt.subplots(figsize=(6, 6))
+            axl.axis(False)
+            
+            # Thickness of legend frame
+            #axl.legend().get_frame().set_linewidth(4)
+            
+            axl.legend(*label_params, loc="center", bbox_to_anchor=(0.5, 0.5), prop={"size":12})
+            #axl.legend().get_frame().set_linewidth(5)
+            figl.savefig("{}/fig_{}_{}_{}_legend.png".format(out_folder, metric, ns, type_dict[file.split('_')[2]]), dpi=300, transparent=True)
+
+
 
 

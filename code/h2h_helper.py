@@ -3,6 +3,54 @@ import os
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import copy
+
+# Combines the results in the results_paths_list and outputs them in combined_results_path
+def combine_results(results_paths_list, combined_results_path, add_result_path = False):
+    
+    #Collect the benchmark folders in each result path
+    benchmarks = []
+    for result_path in results_paths_list:
+        benchmarks.append(set(os.listdir(result_path)))
+        
+    #Get the common benchmark folders
+    benchmarks = list(set.intersection(*benchmarks))
+    print("Common benchmarks = ", benchmarks)
+    
+    # Combine the results in the common benchmarks and save then at the combined_results_path
+    for bm in benchmarks:
+        if not os.path.exists(combined_results_path + bm):
+            os.mkdir(combined_results_path + bm)
+            
+        result_files = []
+        for result_path in results_paths_list:
+            result_files.append(set(os.listdir(result_path + bm)))
+        
+        
+        #Get the common result files
+        result_files = list(set.intersection(*result_files))
+        print("Common Result files = ", result_files)
+        
+        
+        for result_file in result_files:
+            dfs = []
+            for result_path in results_paths_list:
+                df = pd.read_csv(result_path + bm + "/"+result_file, sep = '\t')
+                if add_result_path:
+                    print(result_path.split("/"))
+                    df["Result Path"] = result_path.split("/")[-2]
+                    df["cafa"] = result_path.split("/")[-2].split("_")[0]
+                    df["cafa_filename"] = df["cafa"] + "_" + df["filename"]
+                dfs.append(df)
+            
+            df = pd.concat(dfs, axis = 0)
+            display(df)
+            df.to_csv(combined_results_path + bm + "/" + result_file, sep = "\t", index = None, header = True)
+        
+        #mets_plot = sns.displot([df1.f, df.f], kind="kde",common_norm=False)
+        #mets_plot.set(yticks=[])
+    
+    
 
 def create_plots_h2_h(results_path, metric, cols,out_path='/home/rashika/CAFA4/eval/plots/', n_curves = None, names_file = None, S_min_coord = None):
     dir_list = os.listdir(results_path)
@@ -15,6 +63,9 @@ def create_plots_h2_h(results_path, metric, cols,out_path='/home/rashika/CAFA4/e
     
     if not os.path.exists(out_path):
         os.mkdir(out_path)
+        
+    # Remove 'type1' and 'type2' from the list of files
+    dir_list = [s for s in dir_list if ('type12' in s or 'type3' in s)]
     
     for file in dir_list:
         df_file = results_path + file +"/evaluation_all.tsv"
@@ -68,7 +119,7 @@ def create_plots_h2_h(results_path, metric, cols,out_path='/home/rashika/CAFA4/e
 
 
         # Save to file
-        df_methods.drop(columns=['colors']).to_csv('{}/fig_{}.tsv'.format(out_folder, metric), float_format="%.3f", sep="\t")
+        #df_methods.drop(columns=['colors']).to_csv('{}/fig_{}.tsv'.format(out_folder, metric), float_format="%.3f", sep="\t")
         
         # Add first last points to precision and recall curves to improve APS calculation
         #def add_points(df_):
@@ -110,7 +161,7 @@ def create_plots_h2_h(results_path, metric, cols,out_path='/home/rashika/CAFA4/e
 #             df_best['label'] = df_best.agg(lambda x: f"{x['label']} ({metric.upper()}={x[metric]:.3f} APS={x['aps']:.3f} C={x['max_cov']:.3f})", axis=1)
         
         # Generate the figures
-        plt.rcParams.update({'font.size': 12, 'legend.fontsize': 8})
+        plt.rcParams.update({'font.size': 12, 'legend.fontsize': 14})
 
         # F-score contour lines
         x = np.arange(0.01, 1, 0.01)
@@ -119,7 +170,7 @@ def create_plots_h2_h(results_path, metric, cols,out_path='/home/rashika/CAFA4/e
         Z = 2 * X * Y / (X + Y)
         
         for ns, df_g in df_best.groupby(level='ns'):
-            fig, ax = plt.subplots(figsize=(4, 4))
+            fig, ax = plt.subplots(figsize=(5, 5))
 
              # Contour lines. At the moment they are provided only for the F-score
             if metric.startswith('f'):
@@ -132,7 +183,7 @@ def create_plots_h2_h(results_path, metric, cols,out_path='/home/rashika/CAFA4/e
                 
                 cnt+=1
                 #print(row)
-                if (n_curves and cnt <= n_curves) or ('BLAST' in row['label']) or ('Naive' in row['label']):
+                if (n_curves and cnt <= n_curves) and ("FANN-GO" not in row['label']) and ("RadivojacLab" not in row['label']):
                 
                     #data = df_methods.loc[index[:-1]]
 
@@ -142,14 +193,15 @@ def create_plots_h2_h(results_path, metric, cols,out_path='/home/rashika/CAFA4/e
                     # Precision-recall or mi-ru curves
                     # Determine linestyle based on label or condition
                     linestyle = '-'  # Default linestyle
+                    print(row['label'])
                     if 'BLAST' in row['label'] or 'Naive' in row['label']:
                         linestyle = 'dotted'
-                    elif 'cafa3' in row['label']:
+                    elif 'CAFA3' in row['label']:
                         linestyle = 'dotted'
-                    elif 'cafa2' in row['label']:
+                    elif 'CAFA2' in row['label']:
                         linestyle = 'dashed'
                     
-                    ax.plot(data[cols[0]], data[cols[1]], color=row['colors'], linestyle = linestyle, label=row['label'], lw=1.5, zorder=500-i)
+                    ax.plot(data[cols[0]], data[cols[1]], color=row['colors'], linestyle = linestyle, label=row['label'], lw=2, zorder=500-i)
 
 
                     
@@ -192,14 +244,42 @@ def create_plots_h2_h(results_path, metric, cols,out_path='/home/rashika/CAFA4/e
 
             # Legend
             #ax.legend(loc='center right', bbox_to_anchor=(1, 1.5))
-            leg = ax.legend(markerscale=6, title=file, loc='upper center')
-            for legobj in leg.get_lines():
-                legobj.set_linewidth(10.0)
-             
+            leg = ax.legend(markerscale=12, title=file, loc='upper center')
+            ## Thickness 
+            #for legobj in leg.get_lines():
+            #    legobj.set_linewidth(1.5)
+            
+            # Thickness of plot border
+            for x in ax.spines.values():
+                x.set_linewidth(1.5) 
+            
             #leg.set_bbox_to_anchor((0.5, -1))  
-            ax.legend(title='', fontsize=8, bbox_to_anchor=(1.025, -0.2))
+            ax.legend(title='', fontsize=12, bbox_to_anchor=(1.025, -0.2))
+            
+                
+            # get handles and labels for reuse
+            label_params = copy.copy(ax.get_legend_handles_labels())
+            
+            ax.legend().remove()
+            
+            plt.savefig("{}/fig_{}_{}_{}.png".format(out_folder, metric, ns, type_dict[file.split('_')[2]]), bbox_inches='tight', dpi=300, transparent=True)
+            
+            # Thickness of lines in the legend plot
+            for legobj in label_params[0]:
+                legobj.set_linewidth(3)
+
+            figl, axl = plt.subplots(figsize=(6, 6))
+            axl.axis(False)
+            
+            # Thickness of legend frame
+            #axl.legend().get_frame().set_linewidth(4)
+            
+            axl.legend(*label_params, loc="center", bbox_to_anchor=(0.5, 0.5), prop={"size":12})
+            #axl.legend().get_frame().set_linewidth(5)
+            figl.savefig("{}/fig_{}_{}_{}_legend.png".format(out_folder, metric, ns, type_dict[file.split('_')[2]]), dpi=300, transparent=True)
+
             # Save figure on disk
-            plt.savefig("{}/fig_{}_{}.png".format(out_folder, metric, ns), bbox_inches='tight', dpi=300, transparent=True)
+            #plt.savefig("{}/fig_{}_{}.png".format(out_folder, metric, ns), bbox_inches='tight', dpi=300, transparent=True)
             # plt.clf()
 
 
